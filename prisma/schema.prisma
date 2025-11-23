@@ -1,0 +1,78 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String   @id @default(uuid())
+  email             String   @unique
+  password          String
+  role              String   @default("USER") // ADMIN | USER
+  nativeLanguage    String   @default("es")
+  learningLanguage  String   @default("en")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  phraseProgress    UserPhraseProgress[]
+  
+  @@map("users")
+}
+
+model Language {
+  id        String   @id @default(uuid())
+  code      String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  
+  phrasesNative    Phrase[] @relation("NativeLanguage")
+  phrasesLearning  Phrase[] @relation("LearningLanguage")
+  
+  @@map("languages")
+}
+
+model Phrase {
+  id                String   @id @default(uuid())
+  nativeLanguageId  String
+  learningLanguageId String
+  nativeText        String
+  learningText      String
+  difficulty        String   // BEGINNER | INTERMEDIATE | ADVANCED
+  cefrLevel         String   // A1 | A2 | B1 | B2 | C1 | C2
+  category          String?  // Categoría temática (ej: "saludos", "comida", "viajes", etc.)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  nativeLanguage    Language @relation("NativeLanguage", fields: [nativeLanguageId], references: [id])
+  learningLanguage  Language @relation("LearningLanguage", fields: [learningLanguageId], references: [id])
+  
+  userProgress      UserPhraseProgress[]
+  
+  @@map("phrases")
+}
+
+model UserPhraseProgress {
+  id              String   @id @default(uuid())
+  userId          String
+  phraseId        String
+  userAnswer      String
+  aiFeedback      String?
+  isCorrect       Boolean
+  accuracyScore   Float?   // 0-100
+  wordsLearned    String?  // JSON array of words
+  wordsForgotten  String?  // JSON array of words that were learned but forgotten
+  createdAt       DateTime @default(now())
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phrase          Phrase  @relation(fields: [phraseId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, phraseId, createdAt])
+  @@map("user_phrase_progress")
+}
+
