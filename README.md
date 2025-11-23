@@ -10,12 +10,14 @@ Sistema de gestión de frases para aprendizaje de idiomas con integración de IA
 - 🤖 Integración con OpenAI para verificación inteligente de respuestas
 - 📊 Estadísticas de aprendizaje
 - 🌍 Soporte multiidioma
+- 🎯 Generación automática de frases con ChatGPT
 
 ## Requisitos Previos
 
 - Node.js 18+ 
 - npm o yarn
 - Cuenta de OpenAI con API key
+- Base de datos PostgreSQL (para producción) o SQLite (para desarrollo)
 
 ## Instalación
 
@@ -70,6 +72,25 @@ npm run build
 npm start
 ```
 
+## Despliegue en Vercel
+
+El proyecto está configurado para ejecutarse automáticamente en Vercel:
+
+1. **Variables de entorno en Vercel:**
+   - `DATABASE_URL`: URL de tu base de datos PostgreSQL
+   - `JWT_SECRET`: Clave secreta para JWT
+   - `NEXT_PUBLIC_API_URL`: URL de tu API (ej: `https://tu-app.vercel.app`)
+   - `OPENAI_API_KEY`: Tu clave de API de OpenAI
+
+2. **Scripts automáticos:**
+   - `postinstall`: Genera Prisma Client después de instalar dependencias
+   - `vercel-build`: Ejecuta `db:generate`, `db:push`, `db:seed` y luego `next build`
+
+3. **Notas importantes:**
+   - El seed usa `upsert`, por lo que es seguro ejecutarlo múltiples veces
+   - `db:push` usa `--accept-data-loss` para evitar errores en despliegues
+   - Asegúrate de tener una base de datos PostgreSQL configurada en Vercel
+
 ## Estructura del Proyecto
 
 ```
@@ -106,6 +127,10 @@ backoffice_leaningapp/
 - `DELETE /api/phrases/:id` - Eliminar frase
 - `GET /api/phrases/random` - Obtener frase aleatoria
 - `POST /api/phrases/verify` - Verificar respuesta con IA
+- `POST /api/phrases/generate` - Generar frases con ChatGPT (solo admin)
+- `POST /api/phrases/word-explanation` - Explicación de palabra con IA
+- `POST /api/phrases/grammar-explanation` - Explicación gramatical con IA
+- `POST /api/phrases/audio` - Generar audio de texto
 
 ### Usuarios (Solo Admin)
 
@@ -139,6 +164,18 @@ backoffice_leaningapp/
 - `nativeText`: String
 - `learningText`: String
 - `difficulty`: BEGINNER | INTERMEDIATE | ADVANCED
+- `cefrLevel`: A1 | A2 | B1 | B2 | C1 | C2
+- `category`: String (opcional)
+
+### WordExplanation
+- `id`: UUID
+- `phraseId`: UUID
+- `word`: String
+- `translation`: String
+- `explanation`: String
+- `examples`: JSON Array
+- `grammarNotes`: String (opcional)
+- `grammarExplanation`: String (opcional)
 
 ### UserPhraseProgress
 - `id`: UUID
@@ -160,6 +197,7 @@ backoffice_leaningapp/
 
 ## Notas
 
-- La base de datos por defecto es SQLite (fácil de cambiar a PostgreSQL/MySQL)
+- La base de datos por defecto es SQLite para desarrollo (fácil de cambiar a PostgreSQL)
 - El sistema de verificación con IA utiliza GPT-4o-mini de OpenAI
 - Las estadísticas se calculan en tiempo real desde el progreso del usuario
+- Las explicaciones de palabras se guardan en caché para evitar llamadas repetidas a la IA
