@@ -42,6 +42,30 @@ async function handler(req: NextRequest & { user?: any }) {
       );
     }
 
+    // Check if explanation already exists in database
+    const existingExplanation = await prisma.wordExplanation.findUnique({
+      where: {
+        phraseId_word_nativeLanguageId_learningLanguageId: {
+          phraseId: phrase.id,
+          word: word.toLowerCase().trim(),
+          nativeLanguageId: phrase.nativeLanguageId,
+          learningLanguageId: phrase.learningLanguageId,
+        },
+      },
+    });
+
+    if (existingExplanation) {
+      return NextResponse.json({
+        word,
+        translation: existingExplanation.translation,
+        explanation: existingExplanation.explanation,
+        examples: existingExplanation.examples ? JSON.parse(existingExplanation.examples) : [],
+        grammarNotes: existingExplanation.grammarNotes,
+        grammarExplanation: existingExplanation.grammarExplanation,
+        cached: true,
+      });
+    }
+
     // Generate explanation with AI
     const prompt = `Eres un profesor de idiomas experto. Explica el significado de la palabra "${word}" en el contexto de esta frase:
 
@@ -55,13 +79,15 @@ Proporciona:
 2. Una explicación del significado de la palabra en el contexto de esta frase específica
 3. Ejemplos de uso si es relevante
 4. Notas gramaticales si aplican
+5. Una explicación gramatical completa de POR QUÉ la frase traducida está estructurada así, explicando la gramática del idioma ${phrase.learningLanguage.name} (${phrase.learningLanguage.code}) en el contexto de esta frase completa. Explica reglas gramaticales, orden de palabras, conjugaciones, casos, etc.
 
 Responde SOLO con un JSON válido en este formato exacto:
 {
   "translation": "traducción de la palabra",
   "explanation": "explicación detallada en español del significado en contexto",
   "examples": ["ejemplo 1", "ejemplo 2"] o null,
-  "grammarNotes": "notas gramaticales" o null
+  "grammarNotes": "notas gramaticales específicas de la palabra" o null,
+  "grammarExplanation": "explicación gramatical completa de la frase en ${phrase.learningLanguage.name}, explicando por qué está estructurada así, reglas aplicadas, orden de palabras, etc."
 }`;
 
     const completion = await openai.chat.completions.create({
@@ -87,12 +113,29 @@ Responde SOLO con un JSON válido en este formato exacto:
 
     const explanation = JSON.parse(content);
 
+    // Save to database
+    const savedExplanation = await prisma.wordExplanation.create({
+      data: {
+        phraseId: phrase.id,
+        word: word.toLowerCase().trim(),
+        nativeLanguageId: phrase.nativeLanguageId,
+        learningLanguageId: phrase.learningLanguageId,
+        translation: explanation.translation,
+        explanation: explanation.explanation,
+        examples: explanation.examples ? JSON.stringify(explanation.examples) : null,
+        grammarNotes: explanation.grammarNotes || null,
+        grammarExplanation: explanation.grammarExplanation || null,
+      },
+    });
+
     return NextResponse.json({
       word,
-      translation: explanation.translation,
-      explanation: explanation.explanation,
-      examples: explanation.examples || [],
-      grammarNotes: explanation.grammarNotes || null,
+      translation: savedExplanation.translation,
+      explanation: savedExplanation.explanation,
+      examples: savedExplanation.examples ? JSON.parse(savedExplanation.examples) : [],
+      grammarNotes: savedExplanation.grammarNotes,
+      grammarExplanation: savedExplanation.grammarExplanation,
+      cached: false,
     });
   } catch (error: any) {
     console.error('Word explanation error:', error);
@@ -104,4 +147,3 @@ Responde SOLO con un JSON válido en este formato exacto:
 }
 
 export const POST = requireAuth(handler);
-

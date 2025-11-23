@@ -33,6 +33,8 @@ model Language {
   
   phrasesNative    Phrase[] @relation("NativeLanguage")
   phrasesLearning  Phrase[] @relation("LearningLanguage")
+  wordExplanationsNative WordExplanation[] @relation("WordExplanationNative")
+  wordExplanationsLearning WordExplanation[] @relation("WordExplanationLearning")
   
   @@map("languages")
 }
@@ -53,6 +55,7 @@ model Phrase {
   learningLanguage  Language @relation("LearningLanguage", fields: [learningLanguageId], references: [id])
   
   userProgress      UserPhraseProgress[]
+  wordExplanations  WordExplanation[]
   
   @@map("phrases")
 }
@@ -74,5 +77,27 @@ model UserPhraseProgress {
   
   @@unique([userId, phraseId, createdAt])
   @@map("user_phrase_progress")
+}
+
+model WordExplanation {
+  id                String   @id @default(uuid())
+  phraseId          String
+  word              String
+  nativeLanguageId  String
+  learningLanguageId String
+  translation       String
+  explanation       String
+  examples          String?  // JSON array
+  grammarNotes      String?
+  grammarExplanation String? // Explicación gramatical completa de la frase
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  phrase            Phrase   @relation(fields: [phraseId], references: [id], onDelete: Cascade)
+  nativeLanguage    Language @relation("WordExplanationNative", fields: [nativeLanguageId], references: [id])
+  learningLanguage  Language @relation("WordExplanationLearning", fields: [learningLanguageId], references: [id])
+  
+  @@unique([phraseId, word, nativeLanguageId, learningLanguageId])
+  @@map("word_explanations")
 }
 
