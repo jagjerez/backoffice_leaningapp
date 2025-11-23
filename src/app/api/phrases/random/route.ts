@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/middleware';
+import { AuthenticatedRequest, PrismaWhereClause } from '@/lib/types';
 
-async function handler(req: NextRequest & { user?: any }) {
+async function handler(req: AuthenticatedRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const nativeLanguage = searchParams.get('nativeLanguage');
@@ -15,7 +16,7 @@ async function handler(req: NextRequest & { user?: any }) {
       select: { nativeLanguage: true, learningLanguage: true },
     });
 
-    const where: any = {};
+    const where: PrismaWhereClause = {};
     
     if (nativeLanguage) {
       const lang = await prisma.language.findUnique({ where: { code: nativeLanguage } });

@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/middleware';
+import { AuthenticatedRequest } from '@/lib/types';
 
-async function handler(req: NextRequest & { user?: any }) {
+async function handler(req: AuthenticatedRequest) {
   const url = new URL(req.url);
   const phraseId = url.pathname.split('/').pop() || '';
 

@@ -1,9 +1,16 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/middleware';
+import { AuthenticatedRequest } from '@/lib/types';
 
-async function handler(req: NextRequest & { user?: any }) {
+interface UpdateUserData {
+  nativeLanguage?: string;
+  learningLanguage?: string;
+  password?: string;
+}
+
+async function handler(req: AuthenticatedRequest) {
   if (req.method === 'GET') {
     try {
       const user = await prisma.user.findUnique({
@@ -41,7 +48,7 @@ async function handler(req: NextRequest & { user?: any }) {
       const body = await req.json();
       const { nativeLanguage, learningLanguage, password } = body;
 
-      const updateData: any = {};
+      const updateData: UpdateUserData = {};
       if (nativeLanguage) updateData.nativeLanguage = nativeLanguage;
       if (learningLanguage) updateData.learningLanguage = learningLanguage;
       if (password) {

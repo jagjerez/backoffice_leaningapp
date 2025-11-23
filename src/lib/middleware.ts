@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyToken, TokenPayload } from './auth';
-
-export interface AuthenticatedRequest extends NextRequest {
-  user?: TokenPayload;
-}
+import { verifyToken } from './auth';
+import { AuthenticatedRequest } from './types';
 
 export function requireAuth(
   handler: (req: AuthenticatedRequest) => Promise<NextResponse>

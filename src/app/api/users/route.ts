@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/middleware';
+import { AuthenticatedRequest } from '@/lib/types';
 
-async function handler(req: NextRequest & { user?: any }) {
+async function handler(req: AuthenticatedRequest) {
   if (req.method === 'GET') {
     try {
       const { searchParams } = new URL(req.url);

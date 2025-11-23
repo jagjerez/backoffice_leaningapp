@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/middleware';
+import { AuthenticatedRequest } from '@/lib/types';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-async function handler(req: NextRequest & { user?: any }) {
+async function handler(req: AuthenticatedRequest) {
   if (req.method !== 'POST') {
     return NextResponse.json(
       { error: 'Método no permitido' },
@@ -137,10 +138,11 @@ Responde SOLO con un JSON válido en este formato exacto:
       grammarExplanation: savedExplanation.grammarExplanation,
       cached: false,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Word explanation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error al obtener explicación de la palabra';
     return NextResponse.json(
-      { error: error.message || 'Error al obtener explicación de la palabra' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

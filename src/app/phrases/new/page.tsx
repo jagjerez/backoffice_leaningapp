@@ -41,8 +41,9 @@ export default function NewPhrasePage() {
     try {
       const data = await apiGet<Language[]>('/api/languages');
       setLanguages(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
     }
   };
 
@@ -54,8 +55,9 @@ export default function NewPhrasePage() {
     try {
       await apiPost('/api/phrases', formData);
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

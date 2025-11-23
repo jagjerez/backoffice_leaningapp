@@ -30,19 +30,18 @@ export default function EditPhrasePage() {
     difficulty: 'BEGINNER',
   });
 
-  useEffect(() => {
-    if (!user || !isAdmin) {
-      router.push('/login');
-      return;
-    }
-
-    loadData();
-  }, [user, isAdmin, router, phraseId]);
-
   const loadData = async () => {
     try {
+      interface PhraseResponse {
+        nativeLanguage: { id: string };
+        learningLanguage: { id: string };
+        nativeText: string;
+        learningText: string;
+        difficulty: string;
+      }
+
       const [phraseData, languagesData] = await Promise.all([
-        apiGet<any>(`/api/phrases/${phraseId}`),
+        apiGet<PhraseResponse>(`/api/phrases/${phraseId}`),
         apiGet<Language[]>('/api/languages'),
       ]);
 
@@ -54,12 +53,23 @@ export default function EditPhrasePage() {
         learningText: phraseData.learningText,
         difficulty: phraseData.difficulty,
       });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!user || !isAdmin) {
+      router.push('/login');
+      return;
+    }
+
+    loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, isAdmin, router, phraseId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,8 +79,9 @@ export default function EditPhrasePage() {
     try {
       await apiPut(`/api/phrases/${phraseId}`, formData);
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
     } finally {
       setSaving(false);
     }

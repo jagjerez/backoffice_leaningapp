@@ -40,8 +40,9 @@ export default function DashboardPage() {
     try {
       const data = await apiGet<{ phrases: Phrase[] }>('/api/phrases?limit=50');
       setPhrases(data.phrases);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -53,8 +54,9 @@ export default function DashboardPage() {
     try {
       await apiDelete(`/api/phrases/${id}`);
       setPhrases(phrases.filter((p) => p.id !== id));
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      alert(errorMessage);
     }
   };
 

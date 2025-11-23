@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/middleware';
+import { AuthenticatedRequest } from '@/lib/types';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-async function handler(req: NextRequest & { user?: any }) {
+async function handler(req: AuthenticatedRequest) {
   if (req.method !== 'POST') {
     return NextResponse.json(
       { error: 'Método no permitido' },
@@ -17,7 +18,7 @@ async function handler(req: NextRequest & { user?: any }) {
 
   try {
     const body = await req.json();
-    const { phraseId, text, languageCode } = body;
+    const { phraseId, text } = body;
 
     if (!phraseId && !text) {
       return NextResponse.json(
@@ -27,7 +28,6 @@ async function handler(req: NextRequest & { user?: any }) {
     }
 
     let textToSpeak = text;
-    let language = languageCode;
 
     // If phraseId is provided, get the phrase
     if (phraseId) {
@@ -46,7 +46,6 @@ async function handler(req: NextRequest & { user?: any }) {
       }
 
       textToSpeak = phrase.learningText;
-      language = phrase.learningLanguage.code;
     }
 
     if (!textToSpeak) {
@@ -78,10 +77,11 @@ async function handler(req: NextRequest & { user?: any }) {
       format: 'mp3',
       text: textToSpeak,
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('Audio generation error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Error al generar audio';
     return NextResponse.json(
-      { error: error.message || 'Error al generar audio' },
+      { error: errorMessage },
       { status: 500 }
     );
   }

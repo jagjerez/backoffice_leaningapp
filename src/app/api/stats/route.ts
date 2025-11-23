@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/lib/middleware';
+import { AuthenticatedRequest } from '@/lib/types';
 
-async function handler(req: NextRequest & { user?: any }) {
+async function handler(req: AuthenticatedRequest) {
   try {
     const userId = req.user!.userId;
 
@@ -65,7 +66,7 @@ async function handler(req: NextRequest & { user?: any }) {
         try {
           const words = JSON.parse(p.wordsLearned) as string[];
           words.forEach((w) => allWordsLearned.add(w));
-        } catch (e) {
+        } catch {
           // Ignore parse errors
         }
       }
@@ -73,7 +74,7 @@ async function handler(req: NextRequest & { user?: any }) {
         try {
           const words = JSON.parse(p.wordsForgotten) as string[];
           words.forEach((w) => allWordsForgotten.add(w));
-        } catch (e) {
+        } catch {
           // Ignore parse errors
         }
       }

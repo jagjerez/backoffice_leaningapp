@@ -68,8 +68,9 @@ export default function GeneratePhrasesPage() {
     try {
       const data = await apiGet<Language[]>('/api/languages');
       setLanguages(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
     }
   };
 
@@ -80,7 +81,14 @@ export default function GeneratePhrasesPage() {
     setLoading(true);
 
     try {
-      const result = await apiPost('/api/phrases/generate', {
+      interface GenerateResponse {
+        message: string;
+        requested: number;
+        created: number;
+        duplicates?: number;
+      }
+
+      const result = await apiPost<GenerateResponse>('/api/phrases/generate', {
         nativeLanguageCode: formData.nativeLanguageCode,
         learningLanguageCode: formData.learningLanguageCode,
         cefrLevel: formData.cefrLevel,
@@ -100,8 +108,9 @@ export default function GeneratePhrasesPage() {
         ...formData,
         quantity: 10,
       });
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

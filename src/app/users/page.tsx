@@ -39,8 +39,9 @@ export default function UsersPage() {
     try {
       const data = await apiGet<{ users: User[] }>('/api/users?limit=100');
       setUsers(data.users);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -52,8 +53,9 @@ export default function UsersPage() {
     try {
       await apiDelete(`/api/users/${id}`);
       setUsers(users.filter((u) => u.id !== id));
-    } catch (err: any) {
-      alert(err.message);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
+      alert(errorMessage);
     }
   };
 

@@ -6,9 +6,9 @@ export async function apiRequest(
 ): Promise<Response> {
   const token = localStorage.getItem('token');
   
-  const headers: HeadersInit = {
+  const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...options.headers,
+    ...(options.headers as Record<string, string>),
   };
 
   if (token) {
@@ -33,7 +33,7 @@ export async function apiGet<T>(endpoint: string): Promise<T> {
   return response.json();
 }
 
-export async function apiPost<T>(endpoint: string, data: any): Promise<T> {
+export async function apiPost<T>(endpoint: string, data: unknown): Promise<T> {
   const response = await apiRequest(endpoint, {
     method: 'POST',
     body: JSON.stringify(data),
@@ -41,7 +41,7 @@ export async function apiPost<T>(endpoint: string, data: any): Promise<T> {
   return response.json();
 }
 
-export async function apiPut<T>(endpoint: string, data: any): Promise<T> {
+export async function apiPut<T>(endpoint: string, data: unknown): Promise<T> {
   const response = await apiRequest(endpoint, {
     method: 'PUT',
     body: JSON.stringify(data),

@@ -1,9 +1,18 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/middleware';
+import { AuthenticatedRequest } from '@/lib/types';
 
-async function handler(req: NextRequest & { user?: any }) {
+interface UpdateUserData {
+  email?: string;
+  password?: string;
+  role?: string;
+  nativeLanguage?: string;
+  learningLanguage?: string;
+}
+
+async function handler(req: AuthenticatedRequest) {
   const url = new URL(req.url);
   const userId = url.pathname.split('/').pop() || '';
 
@@ -44,7 +53,7 @@ async function handler(req: NextRequest & { user?: any }) {
       const body = await req.json();
       const { email, password, role, nativeLanguage, learningLanguage } = body;
 
-      const updateData: any = {};
+      const updateData: UpdateUserData = {};
       if (email) updateData.email = email;
       if (role) updateData.role = role;
       if (nativeLanguage) updateData.nativeLanguage = nativeLanguage;
