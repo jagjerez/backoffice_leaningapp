@@ -14,9 +14,37 @@ async function handler(req: AuthenticatedRequest) {
       const limit = parseInt(searchParams.get('limit') || '10');
 
       const where: PrismaWhereClause = {};
-      if (nativeLanguage) where.nativeLanguageId = nativeLanguage;
-      if (learningLanguage) where.learningLanguageId = learningLanguage;
-      if (difficulty) where.difficulty = difficulty;
+      
+      // Convert language codes to IDs if provided
+      if (nativeLanguage) {
+        // Check if it's a GUID (UUID format) or a language code
+        const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nativeLanguage);
+        if (isGuid) {
+          where.nativeLanguageId = nativeLanguage;
+        } else {
+          const lang = await prisma.language.findUnique({ where: { code: nativeLanguage } });
+          if (lang) {
+            where.nativeLanguageId = lang.id;
+          }
+        }
+      }
+      
+      if (learningLanguage) {
+        // Check if it's a GUID (UUID format) or a language code
+        const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(learningLanguage);
+        if (isGuid) {
+          where.learningLanguageId = learningLanguage;
+        } else {
+          const lang = await prisma.language.findUnique({ where: { code: learningLanguage } });
+          if (lang) {
+            where.learningLanguageId = lang.id;
+          }
+        }
+      }
+      
+      if (difficulty) {
+        where.difficulty = difficulty;
+      }
 
       const [phrases, total] = await Promise.all([
         prisma.phrase.findMany({
@@ -53,9 +81,9 @@ async function handler(req: AuthenticatedRequest) {
   if (req.method === 'POST') {
     try {
       const body = await req.json();
-      const { nativeLanguageId, learningLanguageId, nativeText, learningText, difficulty, cefrLevel, category } = body;
+      const { nativeLanguageId, learningLanguageId, situationText, expectedAnswer, situationExplanation, difficulty, cefrLevel, category } = body;
 
-      if (!nativeLanguageId || !learningLanguageId || !nativeText || !learningText || !difficulty || !cefrLevel) {
+      if (!nativeLanguageId || !learningLanguageId || !situationText || !expectedAnswer || !difficulty || !cefrLevel) {
         return NextResponse.json(
           { error: 'Todos los campos requeridos deben estar presentes' },
           { status: 400 }
@@ -66,8 +94,9 @@ async function handler(req: AuthenticatedRequest) {
         data: {
           nativeLanguageId,
           learningLanguageId,
-          nativeText,
-          learningText,
+          situationText,
+          expectedAnswer,
+          situationExplanation: situationExplanation || null,
           difficulty,
           cefrLevel,
           category: category || null,

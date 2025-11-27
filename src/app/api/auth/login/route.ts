@@ -17,6 +17,10 @@ export async function POST(request: NextRequest) {
 
     const user = await prisma.user.findUnique({
       where: { email },
+      include: {
+        nativeLanguage: true,
+        learningLanguage: true,
+      },
     });
 
     if (!user) {
@@ -46,8 +50,8 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         role: user.role,
-        nativeLanguage: user.nativeLanguage,
-        learningLanguage: user.learningLanguage,
+        nativeLanguage: user.nativeLanguage.code,
+        learningLanguage: user.learningLanguage.code,
       },
     });
   } catch (error) {

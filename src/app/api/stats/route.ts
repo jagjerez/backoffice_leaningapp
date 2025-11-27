@@ -10,7 +10,10 @@ async function handler(req: AuthenticatedRequest) {
     // Get user's language preferences
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { nativeLanguage: true, learningLanguage: true },
+      include: {
+        nativeLanguage: true,
+        learningLanguage: true,
+      },
     });
 
     if (!user) {
@@ -20,9 +23,15 @@ async function handler(req: AuthenticatedRequest) {
       );
     }
 
-    // Get all progress for this user
+    // Get progress ONLY for phrases matching user's language combination
     const progress = await prisma.userPhraseProgress.findMany({
-      where: { userId },
+      where: {
+        userId,
+        phrase: {
+          nativeLanguageId: user.nativeLanguageId,
+          learningLanguageId: user.learningLanguageId,
+        },
+      },
       include: {
         phrase: {
           include: {
@@ -34,7 +43,7 @@ async function handler(req: AuthenticatedRequest) {
       orderBy: { createdAt: 'desc' },
     });
 
-    // Calculate statistics
+    // Calculate statistics (already filtered by language combination)
     const totalAttempts = progress.length;
     const correctAttempts = progress.filter((p) => p.isCorrect).length;
     const accuracy = totalAttempts > 0 ? (correctAttempts / totalAttempts) * 100 : 0;
@@ -46,18 +55,19 @@ async function handler(req: AuthenticatedRequest) {
       : 0;
 
     // Get learned phrases (phrases with at least one correct attempt)
+    // Already filtered by language combination in the progress query above
     const learnedPhraseIds = new Set(
       progress.filter((p) => p.isCorrect).map((p) => p.phraseId)
     );
     const learnedPhrases = await prisma.phrase.findMany({
       where: {
         id: { in: Array.from(learnedPhraseIds) },
-        nativeLanguage: { code: user.nativeLanguage },
-        learningLanguage: { code: user.learningLanguage },
+        nativeLanguageId: user.nativeLanguageId,
+        learningLanguageId: user.learningLanguageId,
       },
     });
 
-    // Get words learned and forgotten
+    // Get words learned and forgotten (already filtered by language combination)
     const allWordsLearned = new Set<string>();
     const allWordsForgotten = new Set<string>();
 
@@ -84,8 +94,8 @@ async function handler(req: AuthenticatedRequest) {
     const phrasesByDifficulty = await prisma.phrase.groupBy({
       by: ['difficulty'],
       where: {
-        nativeLanguage: { code: user.nativeLanguage },
-        learningLanguage: { code: user.learningLanguage },
+        nativeLanguageId: user.nativeLanguageId,
+        learningLanguageId: user.learningLanguageId,
       },
       _count: true,
     });
@@ -104,7 +114,7 @@ async function handler(req: AuthenticatedRequest) {
       })),
       recentProgress: progress.slice(0, 10).map((p) => ({
         id: p.id,
-        phrase: p.phrase.nativeText,
+        phrase: p.phrase.situationText,
         userAnswer: p.userAnswer,
         isCorrect: p.isCorrect,
         accuracyScore: p.accuracyScore,

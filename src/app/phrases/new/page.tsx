@@ -12,7 +12,7 @@ interface Language {
 }
 
 export default function NewPhrasePage() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(false);
@@ -21,21 +21,27 @@ export default function NewPhrasePage() {
   const [formData, setFormData] = useState({
     nativeLanguageId: '',
     learningLanguageId: '',
-    nativeText: '',
-    learningText: '',
+    situationText: '',
+    expectedAnswer: '',
+    situationExplanation: '',
     difficulty: 'BEGINNER',
     cefrLevel: 'A1',
     category: '',
   });
 
   useEffect(() => {
+    // Esperar a que termine de cargar la autenticación
+    if (authLoading) {
+      return;
+    }
+
     if (!user || !isAdmin) {
       router.push('/login');
       return;
     }
 
     loadLanguages();
-  }, [user, isAdmin, router]);
+  }, [user, isAdmin, authLoading, router]);
 
   const loadLanguages = async () => {
     try {
@@ -195,34 +201,58 @@ export default function NewPhrasePage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Frase en Idioma Nativo
+                  Situación/Pregunta en Idioma a Aprender *
                 </label>
                 <textarea
                   required
-                  value={formData.nativeText}
+                  value={formData.situationText}
                   onChange={(e) =>
-                    setFormData({ ...formData, nativeText: e.target.value })
+                    setFormData({ ...formData, situationText: e.target.value })
                   }
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Ej: Hola, ¿cómo estás?"
+                  placeholder="Ej: Wie würden Sie einen Kaffee bestellen?"
                 />
+                <p className="mt-1 text-sm text-gray-500">
+                  Escribe la situación o pregunta en el idioma que se está aprendiendo
+                </p>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Traducción Correcta
+                  Respuesta Esperada en Idioma a Aprender *
                 </label>
                 <textarea
                   required
-                  value={formData.learningText}
+                  value={formData.expectedAnswer}
                   onChange={(e) =>
-                    setFormData({ ...formData, learningText: e.target.value })
+                    setFormData({ ...formData, expectedAnswer: e.target.value })
                   }
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                  placeholder="Ej: Hello, how are you?"
+                  placeholder="Ej: Hallo, ich möchte bitte einen Kaffee."
                 />
+                <p className="mt-1 text-sm text-gray-500">
+                  Escribe la respuesta esperada en el idioma que se está aprendiendo
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Explicación de la Situación (Opcional)
+                </label>
+                <textarea
+                  value={formData.situationExplanation}
+                  onChange={(e) =>
+                    setFormData({ ...formData, situationExplanation: e.target.value })
+                  }
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Explicación en idioma nativo del contexto de la situación..."
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Breve explicación en el idioma nativo para dar contexto
+                </p>
               </div>
 
               <div className="flex justify-end space-x-4">

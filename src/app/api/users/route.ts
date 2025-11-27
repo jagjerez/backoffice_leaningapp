@@ -13,14 +13,9 @@ async function handler(req: AuthenticatedRequest) {
 
       const [users, total] = await Promise.all([
         prisma.user.findMany({
-          select: {
-            id: true,
-            email: true,
-            role: true,
+          include: {
             nativeLanguage: true,
             learningLanguage: true,
-            createdAt: true,
-            updatedAt: true,
           },
           skip: (page - 1) * limit,
           take: limit,
@@ -30,7 +25,15 @@ async function handler(req: AuthenticatedRequest) {
       ]);
 
       return NextResponse.json({
-        users,
+        users: users.map((user) => ({
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          nativeLanguage: user.nativeLanguage.code,
+          learningLanguage: user.learningLanguage.code,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+        })),
         pagination: {
           page,
           limit,
@@ -70,6 +73,22 @@ async function handler(req: AuthenticatedRequest) {
         );
       }
 
+      // Convert language codes to IDs
+      const nativeLangCode = nativeLanguage || 'es';
+      const learningLangCode = learningLanguage || 'en';
+
+      const [nativeLang, learningLang] = await Promise.all([
+        prisma.language.findUnique({ where: { code: nativeLangCode } }),
+        prisma.language.findUnique({ where: { code: learningLangCode } }),
+      ]);
+
+      if (!nativeLang || !learningLang) {
+        return NextResponse.json(
+          { error: `Idiomas no encontrados. Verifica que los códigos "${nativeLangCode}" y "${learningLangCode}" sean válidos.` },
+          { status: 400 }
+        );
+      }
+
       const hashedPassword = await bcrypt.hash(password, 10);
 
       const user = await prisma.user.create({
@@ -77,20 +96,23 @@ async function handler(req: AuthenticatedRequest) {
           email,
           password: hashedPassword,
           role: role || 'USER',
-          nativeLanguage: nativeLanguage || 'es',
-          learningLanguage: learningLanguage || 'en',
+          nativeLanguageId: nativeLang.id,
+          learningLanguageId: learningLang.id,
         },
-        select: {
-          id: true,
-          email: true,
-          role: true,
+        include: {
           nativeLanguage: true,
           learningLanguage: true,
-          createdAt: true,
         },
       });
 
-      return NextResponse.json(user, { status: 201 });
+      return NextResponse.json({
+        id: user.id,
+        email: user.email,
+        role: user.role,
+        nativeLanguage: user.nativeLanguage.code,
+        learningLanguage: user.learningLanguage.code,
+        createdAt: user.createdAt,
+      }, { status: 201 });
     } catch (error) {
       console.error('Create user error:', error);
       return NextResponse.json(

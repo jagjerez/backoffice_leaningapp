@@ -12,7 +12,7 @@ interface Language {
 }
 
 export default function EditPhrasePage() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
   const params = useParams();
   const phraseId = params.id as string;
@@ -25,9 +25,12 @@ export default function EditPhrasePage() {
   const [formData, setFormData] = useState({
     nativeLanguageId: '',
     learningLanguageId: '',
-    nativeText: '',
-    learningText: '',
+    situationText: '',
+    expectedAnswer: '',
+    situationExplanation: '',
     difficulty: 'BEGINNER',
+    cefrLevel: 'A1',
+    category: '',
   });
 
   const loadData = async () => {
@@ -35,9 +38,12 @@ export default function EditPhrasePage() {
       interface PhraseResponse {
         nativeLanguage: { id: string };
         learningLanguage: { id: string };
-        nativeText: string;
-        learningText: string;
+        situationText: string;
+        expectedAnswer: string;
+        situationExplanation?: string;
         difficulty: string;
+        cefrLevel: string;
+        category?: string;
       }
 
       const [phraseData, languagesData] = await Promise.all([
@@ -49,9 +55,12 @@ export default function EditPhrasePage() {
       setFormData({
         nativeLanguageId: phraseData.nativeLanguage.id,
         learningLanguageId: phraseData.learningLanguage.id,
-        nativeText: phraseData.nativeText,
-        learningText: phraseData.learningText,
+        situationText: phraseData.situationText,
+        expectedAnswer: phraseData.expectedAnswer,
+        situationExplanation: phraseData.situationExplanation || '',
         difficulty: phraseData.difficulty,
+        cefrLevel: phraseData.cefrLevel,
+        category: phraseData.category || '',
       });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error desconocido';
@@ -62,6 +71,11 @@ export default function EditPhrasePage() {
   };
 
   useEffect(() => {
+    // Esperar a que termine de cargar la autenticación
+    if (authLoading) {
+      return;
+    }
+
     if (!user || !isAdmin) {
       router.push('/login');
       return;
@@ -69,7 +83,7 @@ export default function EditPhrasePage() {
 
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isAdmin, router, phraseId]);
+  }, [user, isAdmin, authLoading, router, phraseId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -87,7 +101,7 @@ export default function EditPhrasePage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Cargando...</div>
@@ -169,52 +183,116 @@ export default function EditPhrasePage() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Nivel de Dificultad
-                </label>
-                <select
-                  required
-                  value={formData.difficulty}
-                  onChange={(e) =>
-                    setFormData({ ...formData, difficulty: e.target.value })
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-                >
-                  <option value="BEGINNER">Principiante</option>
-                  <option value="INTERMEDIATE">Intermedio</option>
-                  <option value="ADVANCED">Avanzado</option>
-                </select>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nivel de Dificultad
+                  </label>
+                  <select
+                    required
+                    value={formData.difficulty}
+                    onChange={(e) =>
+                      setFormData({ ...formData, difficulty: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="BEGINNER">Principiante</option>
+                    <option value="INTERMEDIATE">Intermedio</option>
+                    <option value="ADVANCED">Avanzado</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Nivel CEFR *
+                  </label>
+                  <select
+                    required
+                    value={formData.cefrLevel}
+                    onChange={(e) =>
+                      setFormData({ ...formData, cefrLevel: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="B1">B1</option>
+                    <option value="B2">B2</option>
+                    <option value="C1">C1</option>
+                    <option value="C2">C2</option>
+                  </select>
+                </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Frase en Idioma Nativo
+                  Categoría (Opcional)
                 </label>
-                <textarea
-                  required
-                  value={formData.nativeText}
+                <input
+                  type="text"
+                  value={formData.category}
                   onChange={(e) =>
-                    setFormData({ ...formData, nativeText: e.target.value })
+                    setFormData({ ...formData, category: e.target.value })
                   }
-                  rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Ej: Saludos, Comida, Viajes..."
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Traducción Correcta
+                  Situación/Pregunta en Idioma a Aprender *
                 </label>
                 <textarea
                   required
-                  value={formData.learningText}
+                  value={formData.situationText}
                   onChange={(e) =>
-                    setFormData({ ...formData, learningText: e.target.value })
+                    setFormData({ ...formData, situationText: e.target.value })
                   }
                   rows={3}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Ej: Wie würden Sie einen Kaffee bestellen?"
                 />
+                <p className="mt-1 text-sm text-gray-500">
+                  Escribe la situación o pregunta en el idioma que se está aprendiendo
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Respuesta Esperada en Idioma a Aprender *
+                </label>
+                <textarea
+                  required
+                  value={formData.expectedAnswer}
+                  onChange={(e) =>
+                    setFormData({ ...formData, expectedAnswer: e.target.value })
+                  }
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Ej: Hallo, ich möchte bitte einen Kaffee."
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Escribe la respuesta esperada en el idioma que se está aprendiendo
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Explicación de la Situación (Opcional)
+                </label>
+                <textarea
+                  value={formData.situationExplanation}
+                  onChange={(e) =>
+                    setFormData({ ...formData, situationExplanation: e.target.value })
+                  }
+                  rows={2}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  placeholder="Explicación en idioma nativo del contexto de la situación..."
+                />
+                <p className="mt-1 text-sm text-gray-500">
+                  Breve explicación en el idioma nativo para dar contexto
+                </p>
               </div>
 
               <div className="flex justify-end space-x-4">

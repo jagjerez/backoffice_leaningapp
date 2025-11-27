@@ -40,7 +40,7 @@ const CATEGORIES = [
 ];
 
 export default function GeneratePhrasesPage() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
   const [languages, setLanguages] = useState<Language[]>([]);
   const [loading, setLoading] = useState(false);
@@ -56,13 +56,18 @@ export default function GeneratePhrasesPage() {
   });
 
   useEffect(() => {
+    // Esperar a que termine de cargar la autenticación
+    if (authLoading) {
+      return;
+    }
+
     if (!user || !isAdmin) {
       router.push('/login');
       return;
     }
 
     loadLanguages();
-  }, [user, isAdmin, router]);
+  }, [user, isAdmin, authLoading, router]);
 
   const loadLanguages = async () => {
     try {

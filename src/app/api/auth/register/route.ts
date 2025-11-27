@@ -27,6 +27,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Convert language codes to IDs
+    const nativeLangCode = nativeLanguage || 'es';
+    const learningLangCode = learningLanguage || 'en';
+
+    console.log('Register request:', {
+      email,
+      nativeLanguage: nativeLangCode,
+      learningLanguage: learningLangCode,
+    });
+
+    const [nativeLang, learningLang] = await Promise.all([
+      prisma.language.findUnique({ where: { code: nativeLangCode } }),
+      prisma.language.findUnique({ where: { code: learningLangCode } }),
+    ]);
+
+    if (!nativeLang) {
+      console.error(`Native language "${nativeLangCode}" not found`);
+      return NextResponse.json(
+        { 
+          error: `Idioma nativo "${nativeLangCode}" no encontrado`,
+          hint: 'Verifica que el código de idioma sea válido (es, en, de, fr, it, pt)'
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!learningLang) {
+      console.error(`Learning language "${learningLangCode}" not found`);
+      return NextResponse.json(
+        { 
+          error: `Idioma a aprender "${learningLangCode}" no encontrado`,
+          hint: 'Verifica que el código de idioma sea válido (es, en, de, fr, it, pt)'
+        },
+        { status: 400 }
+      );
+    }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -36,8 +73,12 @@ export async function POST(request: NextRequest) {
         email,
         password: hashedPassword,
         role: 'USER',
-        nativeLanguage: nativeLanguage || 'es',
-        learningLanguage: learningLanguage || 'en',
+        nativeLanguageId: nativeLang.id,
+        learningLanguageId: learningLang.id,
+      },
+      include: {
+        nativeLanguage: true,
+        learningLanguage: true,
       },
     });
 
@@ -53,8 +94,8 @@ export async function POST(request: NextRequest) {
         id: user.id,
         email: user.email,
         role: user.role,
-        nativeLanguage: user.nativeLanguage,
-        learningLanguage: user.learningLanguage,
+        nativeLanguage: user.nativeLanguage.code,
+        learningLanguage: user.learningLanguage.code,
       },
     }, { status: 201 });
   } catch (error) {

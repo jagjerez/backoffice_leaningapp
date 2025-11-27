@@ -15,10 +15,13 @@ model User {
   email             String   @unique
   password          String
   role              String   @default("USER") // ADMIN | USER
-  nativeLanguage    String   @default("es")
-  learningLanguage  String   @default("en")
+  nativeLanguageId  String
+  learningLanguageId String
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  
+  nativeLanguage    Language @relation("UserNativeLanguage", fields: [nativeLanguageId], references: [id])
+  learningLanguage  Language @relation("UserLearningLanguage", fields: [learningLanguageId], references: [id])
   
   phraseProgress    UserPhraseProgress[]
   
@@ -35,6 +38,8 @@ model Language {
   phrasesLearning  Phrase[] @relation("LearningLanguage")
   wordExplanationsNative WordExplanation[] @relation("WordExplanationNative")
   wordExplanationsLearning WordExplanation[] @relation("WordExplanationLearning")
+  usersNative      User[]   @relation("UserNativeLanguage")
+  usersLearning    User[]   @relation("UserLearningLanguage")
   
   @@map("languages")
 }
@@ -43,8 +48,9 @@ model Phrase {
   id                String   @id @default(uuid())
   nativeLanguageId  String
   learningLanguageId String
-  nativeText        String
-  learningText      String
+  situationText     String   // Frase/situación en el idioma a aprender (ej: "Wie würden Sie einen Kaffee bestellen?")
+  expectedAnswer    String   // Respuesta esperada en el idioma a aprender (ej: "Hallo, ich möchte bitte einen Kaffee.")
+  situationExplanation String? // Explicación de la situación en el idioma nativo (opcional, para contexto)
   difficulty        String   // BEGINNER | INTERMEDIATE | ADVANCED
   cefrLevel         String   // A1 | A2 | B1 | B2 | C1 | C2
   category          String?  // Categoría temática (ej: "saludos", "comida", "viajes", etc.)
@@ -56,7 +62,10 @@ model Phrase {
   
   userProgress      UserPhraseProgress[]
   wordExplanations  WordExplanation[]
-  
+
+  @@index([nativeLanguageId, learningLanguageId])
+  @@index([nativeLanguageId, learningLanguageId, difficulty])
+  @@index([nativeLanguageId, learningLanguageId, cefrLevel])
   @@map("phrases")
 }
 
@@ -98,6 +107,8 @@ model WordExplanation {
   learningLanguage  Language @relation("WordExplanationLearning", fields: [learningLanguageId], references: [id])
   
   @@unique([phraseId, word, nativeLanguageId, learningLanguageId])
+  @@index([phraseId, nativeLanguageId, learningLanguageId])
+  @@index([phraseId])
   @@map("word_explanations")
 }
 

@@ -37,16 +37,35 @@ async function handler(req: AuthenticatedRequest) {
   if (req.method === 'PUT') {
     try {
       const body = await req.json();
-      const { nativeLanguageId, learningLanguageId, nativeText, learningText, difficulty } = body;
+      const { 
+        nativeLanguageId, 
+        learningLanguageId, 
+        situationText, 
+        expectedAnswer, 
+        situationExplanation,
+        difficulty,
+        cefrLevel,
+        category
+      } = body;
+
+      if (!situationText || !expectedAnswer || !difficulty || !cefrLevel) {
+        return NextResponse.json(
+          { error: 'Los campos requeridos son: situationText, expectedAnswer, difficulty, cefrLevel' },
+          { status: 400 }
+        );
+      }
 
       const phrase = await prisma.phrase.update({
         where: { id: phraseId },
         data: {
           ...(nativeLanguageId && { nativeLanguageId }),
           ...(learningLanguageId && { learningLanguageId }),
-          ...(nativeText && { nativeText }),
-          ...(learningText && { learningText }),
-          ...(difficulty && { difficulty }),
+          situationText,
+          expectedAnswer,
+          situationExplanation: situationExplanation || null,
+          difficulty,
+          cefrLevel,
+          category: category || null,
         },
         include: {
           nativeLanguage: true,

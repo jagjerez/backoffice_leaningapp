@@ -41,9 +41,10 @@ async function handler(req: AuthenticatedRequest) {
 
     // Verify with AI
     const verification = await verifyPhraseAnswer(
-      phrase.nativeText,
+      phrase.situationText,
       userAnswer,
-      phrase.learningText,
+      phrase.expectedAnswer,
+      phrase.cefrLevel,
       phrase.difficulty
     );
 

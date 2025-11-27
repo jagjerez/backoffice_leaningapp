@@ -15,13 +15,18 @@ interface User {
 }
 
 export default function UsersPage() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Esperar a que termine de cargar la autenticación
+    if (authLoading) {
+      return;
+    }
+
     if (!user) {
       router.push('/login');
       return;
@@ -33,7 +38,7 @@ export default function UsersPage() {
     }
 
     loadUsers();
-  }, [user, isAdmin, router]);
+  }, [user, isAdmin, authLoading, router]);
 
   const loadUsers = async () => {
     try {
@@ -59,7 +64,7 @@ export default function UsersPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Cargando...</div>

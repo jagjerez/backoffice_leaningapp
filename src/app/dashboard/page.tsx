@@ -8,21 +8,29 @@ import { apiGet, apiDelete } from '@/lib/api';
 
 interface Phrase {
   id: string;
-  nativeText: string;
-  learningText: string;
+  situationText: string;
+  expectedAnswer: string;
+  situationExplanation?: string;
   difficulty: string;
+  cefrLevel: string;
+  category?: string;
   nativeLanguage: { code: string; name: string };
   learningLanguage: { code: string; name: string };
 }
 
 export default function DashboardPage() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, loading: authLoading } = useAuth();
   const router = useRouter();
   const [phrases, setPhrases] = useState<Phrase[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Esperar a que termine de cargar la autenticación
+    if (authLoading) {
+      return;
+    }
+
     if (!user) {
       router.push('/login');
       return;
@@ -34,7 +42,7 @@ export default function DashboardPage() {
     }
 
     loadPhrases();
-  }, [user, isAdmin, router]);
+  }, [user, isAdmin, authLoading, router]);
 
   const loadPhrases = async () => {
     try {
@@ -60,7 +68,7 @@ export default function DashboardPage() {
     }
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-lg">Cargando...</div>
@@ -136,16 +144,29 @@ export default function DashboardPage() {
                             <span className="text-xs font-semibold px-2 py-1 bg-blue-100 text-blue-800 rounded">
                               {phrase.difficulty}
                             </span>
+                            <span className="text-xs font-semibold px-2 py-1 bg-green-100 text-green-800 rounded">
+                              {phrase.cefrLevel}
+                            </span>
+                            {phrase.category && (
+                              <span className="text-xs font-semibold px-2 py-1 bg-purple-100 text-purple-800 rounded">
+                                {phrase.category}
+                              </span>
+                            )}
                             <span className="text-xs text-gray-500">
                               {phrase.nativeLanguage.name} → {phrase.learningLanguage.name}
                             </span>
                           </div>
                           <p className="text-gray-700 mb-1">
-                            <strong>Original:</strong> {phrase.nativeText}
+                            <strong>Situación:</strong> {phrase.situationText}
                           </p>
                           <p className="text-gray-600">
-                            <strong>Traducción:</strong> {phrase.learningText}
+                            <strong>Respuesta esperada:</strong> {phrase.expectedAnswer}
                           </p>
+                          {phrase.situationExplanation && (
+                            <p className="text-gray-500 text-sm mt-1 italic">
+                              {phrase.situationExplanation}
+                            </p>
+                          )}
                         </div>
                         <div className="flex space-x-2 ml-4">
                           <Link
