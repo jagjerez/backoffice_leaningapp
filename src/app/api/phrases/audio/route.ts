@@ -45,7 +45,7 @@ async function handler(req: AuthenticatedRequest) {
         );
       }
 
-      textToSpeak = phrase.learningText;
+      textToSpeak = phrase.situationText;
     }
 
     if (!textToSpeak) {

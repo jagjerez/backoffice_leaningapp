@@ -53,13 +53,46 @@ async function handler(req: AuthenticatedRequest) {
       const body = await req.json();
       const { email, password, role, nativeLanguage, learningLanguage } = body;
 
-      const updateData: UpdateUserData = {};
+      const updateData: any = {};
       if (email) updateData.email = email;
       if (role) updateData.role = role;
-      if (nativeLanguage) updateData.nativeLanguage = nativeLanguage;
-      if (learningLanguage) updateData.learningLanguage = learningLanguage;
       if (password) {
         updateData.password = await bcrypt.hash(password, 10);
+      }
+
+      // Convert language codes to IDs if provided
+      if (nativeLanguage) {
+        const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(nativeLanguage);
+        if (isGuid) {
+          updateData.nativeLanguageId = nativeLanguage;
+        } else {
+          const lang = await prisma.language.findUnique({ where: { code: nativeLanguage } });
+          if (lang) {
+            updateData.nativeLanguageId = lang.id;
+          } else {
+            return NextResponse.json(
+              { error: `Idioma nativo no encontrado: ${nativeLanguage}` },
+              { status: 404 }
+            );
+          }
+        }
+      }
+
+      if (learningLanguage) {
+        const isGuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(learningLanguage);
+        if (isGuid) {
+          updateData.learningLanguageId = learningLanguage;
+        } else {
+          const lang = await prisma.language.findUnique({ where: { code: learningLanguage } });
+          if (lang) {
+            updateData.learningLanguageId = lang.id;
+          } else {
+            return NextResponse.json(
+              { error: `Idioma de aprendizaje no encontrado: ${learningLanguage}` },
+              { status: 404 }
+            );
+          }
+        }
       }
 
       const user = await prisma.user.update({

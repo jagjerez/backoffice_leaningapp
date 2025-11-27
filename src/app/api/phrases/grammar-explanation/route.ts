@@ -68,8 +68,8 @@ async function handler(req: AuthenticatedRequest) {
 
 Analiza esta frase completa y explica la gramática del idioma ${phrase.learningLanguage.name}:
 
-Frase en idioma nativo (${phrase.nativeLanguage.name}): "${phrase.nativeText}"
-Frase traducida (${phrase.learningLanguage.name}): "${phrase.learningText}"
+Frase en idioma nativo (${phrase.nativeLanguage.name}): "${phrase.situationExplanation || phrase.situationText}"
+Frase traducida (${phrase.learningLanguage.name}): "${phrase.situationText}"
 Palabra seleccionada: "${word}"
 
 Explica:
